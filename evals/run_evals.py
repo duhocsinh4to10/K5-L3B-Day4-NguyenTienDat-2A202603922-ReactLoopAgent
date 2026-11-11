@@ -5,6 +5,23 @@ import json
 import os
 from pathlib import Path
 import sys
+
+# Đọc file .env nếu có để hỗ trợ biến môi trường trên Windows/PowerShell
+env_file = Path('.env')
+if not env_file.exists():
+    env_file = Path(__file__).resolve().parents[1] / '.env'
+if env_file.exists():
+    with open(env_file, encoding='utf-8') as f:
+        for line in f:
+            line = line.strip()
+            if line and not line.startswith('#') and '=' in line:
+                if line.startswith('export '):
+                    line = line[7:].strip()
+                key, val = line.split('=', 1)
+                key, val = key.strip(), val.strip().strip("'").strip('"')
+                if val and not val.startswith('YOUR_') and not val.startswith('dán_') and key not in os.environ:
+                    os.environ[key] = val
+
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from agent import run_agent
 from providers import Provider
@@ -35,7 +52,7 @@ def main():
     parser = argparse.ArgumentParser(description='Chạy agent và chấm eval 0–100')
     choices = ['openai', 'gemini', 'anthropic', 'openrouter']
     parser.add_argument('--provider', choices=choices, default=os.getenv('PROVIDER', 'openai'))
-    parser.add_argument('--model', default=os.getenv('MODEL'))
+    parser.add_argument('--model', default=os.getenv('MODEL', 'deepseek-v4.1-flash'))
     parser.add_argument('--judge-provider', choices=choices, default=os.getenv('JUDGE_PROVIDER'))
     parser.add_argument('--judge-model', default=os.getenv('JUDGE_MODEL'))
     parser.add_argument('--bonus', action='store_true', help='Chạy bộ bonus riêng; không ảnh hưởng điểm chính')

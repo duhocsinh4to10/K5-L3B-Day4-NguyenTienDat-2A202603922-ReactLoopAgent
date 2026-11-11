@@ -11,25 +11,18 @@ CONFIG = {
     'anthropic': ('ANTHROPIC_API_KEY', 'https://api.anthropic.com/v1/messages'),
 }
 
-
 def post_json(url, headers, payload):
     req = urllib.request.Request(url, data=json.dumps(payload).encode(), headers={'Content-Type': 'application/json', **headers})
     try:
         with urllib.request.urlopen(req, timeout=60) as response:
             return json.load(response)
     except urllib.error.HTTPError as exc:
-        # Do not print response bodies: they may contain account or request data.
         raise RuntimeError(f'Provider trả HTTP {exc.code}; kiểm tra model, key và quota.') from exc
     except urllib.error.URLError as exc:
         raise RuntimeError(f'Không kết nối được provider: {exc.reason}') from exc
 
-
 class Provider:
-    """complete(messages, schemas) -> {message, calls, finish, usage}.
-
-    messages: system/user/assistant/tool theo format Chat Completions. message trả về
-    cần được append nguyên vẹn; tool result có role, tool_call_id, content (JSON string).
-    """
+    """complete(messages, schemas) -> {message, calls, finish, usage}."""
     def __init__(self, name, model):
         if name not in CONFIG:
             raise ValueError(f'Provider không hợp lệ: {name}')
@@ -54,6 +47,7 @@ class Provider:
         return {'message': message, 'calls': calls, 'finish': choice.get('finish_reason'), 'usage': data.get('usage', {})}
 
     def _anthropic(self, messages, schemas):
+        # (Giữ nguyên phần code rườm rà của anthropic ở đây để không báo lỗi)
         system = '\n'.join(m['content'] for m in messages if m['role'] == 'system')
         native = []
         for m in messages:
